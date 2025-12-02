@@ -7,6 +7,7 @@ type DataTablePageShellProps = {
   description?: string;
   primaryActionLabel: ReactNode;
   onPrimaryAction: () => void;
+  actions?: ReactNode;
   toolbar?: ReactNode;
   children: ReactNode;
 };
@@ -16,6 +17,7 @@ export function DataTablePageShell({
   description,
   primaryActionLabel,
   onPrimaryAction,
+  actions,
   toolbar,
   children,
 }: DataTablePageShellProps) {
@@ -26,6 +28,7 @@ export function DataTablePageShell({
         description={description}
         primaryActionLabel={primaryActionLabel}
         onPrimaryAction={onPrimaryAction}
+        actions={actions}
       />
       <div className="rounded-sm border bg-card p-4">
         <div className="flex flex-col gap-2">

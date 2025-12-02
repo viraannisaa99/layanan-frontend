@@ -10,6 +10,7 @@ export type TableHeaderProps = {
   description?: string
   primaryActionLabel: React.ReactNode
   onPrimaryAction: () => void
+  actions?: React.ReactNode
 }
 
 export function TableHeader({
@@ -17,6 +18,7 @@ export function TableHeader({
   description,
   primaryActionLabel,
   onPrimaryAction,
+  actions,
 }: TableHeaderProps) {
   return (
     <AppCard className="space-y-4 p-3">
@@ -27,9 +29,12 @@ export function TableHeader({
             <p className="text-xs text-muted-foreground">{description}</p>
           )}
         </div>
-        <Button size="sm" onClick={onPrimaryAction}>
-          {primaryActionLabel}
-        </Button>
+        <div className="flex items-center gap-2">
+          {actions}
+          <Button size="sm" onClick={onPrimaryAction}>
+            {primaryActionLabel}
+          </Button>
+        </div>
       </div>
     </AppCard>
   )

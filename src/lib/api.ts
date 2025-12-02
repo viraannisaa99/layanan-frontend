@@ -322,6 +322,21 @@ export function deleteService(id: string) {
   })
 }
 
+export function getDepartementsMaster(params: DepartmentListParams = {}) {
+  const search = new URLSearchParams()
+  search.set("status", params.status ?? "all")
+
+  return apiRequest<Department[]>(
+    `/api/v1/departments?${search.toString()}`, {
+    init: {
+      headers: {
+        "X-Backend-Base-Url": "https://api.devpcr.duckdns.org/"
+      }
+    }
+  }
+  )
+}
+
 export function listDepartments(params: DepartmentListParams = {}) {
   const search = new URLSearchParams()
   search.set("status", params.status ?? "all")
@@ -379,8 +394,32 @@ export function deleteDepartment(id: string) {
 }
 
 export function listStudyPrograms(params: PaginatedListParams = {}) {
+  const search = new URLSearchParams()
+  search.set("status", params.status ?? "all")
+  if (params.page) {
+    search.set("page", params.page.toString())
+  }
+  if (params.perPage) {
+    search.set("per_page", params.perPage.toString())
+  }
+  if (params.search) {
+    search.set("search", params.search)
+  }
+
+  return apiRequest<StudyProgram[]>(
+    `/api/v1/study-programs?${search.toString()}`
+  )
+}
+
+export function getStudyProgramsMaster(params: PaginatedListParams = {}) {
   const search = buildListSearchParams(params)
-  return apiRequest<StudyProgram[]>(`/api/v1/study-programs?${search.toString()}`)
+  return apiRequest<StudyProgram[]>(`/api/v1/study-programs?${search.toString()}`, {
+    init: {
+      headers: {
+        "X-Backend-Base-Url": "https://api.devpcr.duckdns.org/"
+      }
+    }
+  })
 }
 
 export function createStudyProgram(payload: StudyProgramPayload) {
@@ -410,7 +449,36 @@ export function deleteStudyProgram(id: string) {
 
 export function listPositions(params: PaginatedListParams = {}) {
   const search = buildListSearchParams(params)
+  search.set("status", params.status ?? "all")
+  if (params.page) {
+    search.set("page", params.page.toString())
+  }
+  if (params.perPage) {
+    search.set("per_page", params.perPage.toString())
+  }
+  if (params.search) {
+    search.set("search", params.search)
+  }
+  // return apiRequest<Position[]>(`/api/v1/positions?${search.toString()}`, {
+  //   init: {
+  //     headers: {
+  //       "X-Backend-Base-Url": "https://api.devpcr.duckdns.org/"
+  //     }
+  //   }
+  // })
   return apiRequest<Position[]>(`/api/v1/positions?${search.toString()}`)
+}
+
+export function getPositionsMaster(params: PaginatedListParams = {}) {
+  const search = new URLSearchParams()
+  search.set("status", params.status ?? "all")
+  return apiRequest<Position[]>(`/api/v1/positions?${search.toString()}`, {
+    init: {
+      headers: {
+        "X-Backend-Base-Url": "https://api.devpcr.duckdns.org/"
+      }
+    }
+  })
 }
 
 export function createPosition(payload: PositionPayload) {
@@ -440,7 +508,13 @@ export function deletePosition(id: string) {
 
 export function listEmployeeClasses(params: PaginatedListParams = {}) {
   const search = buildListSearchParams(params)
-  return apiRequest<EmployeeClass[]>(`/api/v1/employee-classes?${search.toString()}`)
+  return apiRequest<EmployeeClass[]>(`/api/v1/employee-classes?${search.toString()}`, {
+    init: {
+      headers: {
+        "X-Backend-Base-Url": "https://api.devpcr.duckdns.org/"
+      }
+    }
+  })
 }
 
 export function createEmployeeClass(payload: EmployeeClassPayload) {
@@ -470,7 +544,13 @@ export function deleteEmployeeClass(id: string) {
 
 export function listActivities(params: PaginatedListParams = {}) {
   const search = buildListSearchParams(params)
-  return apiRequest<Activity[]>(`/api/v1/activities?${search.toString()}`)
+  return apiRequest<Activity[]>(`/api/v1/activities?${search.toString()}`, {
+    init: {
+      headers: {
+        "X-Backend-Base-Url": "https://api.devpcr.duckdns.org/"
+      }
+    }
+  })
 }
 
 export function createActivity(payload: ActivityPayload) {

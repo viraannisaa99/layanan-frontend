@@ -58,6 +58,7 @@ export type MasterDataPageConfig<TData, TPayload, TFormState> = {
   title: string
   description: string
   icon?: ReactNode
+  actions?: ReactNode
   searchPlaceholder?: string
   statusFilterOptions?: StatusFilterOption[]
   defaultStatus?: string
@@ -96,6 +97,7 @@ export function createMasterDataPage<TData extends { id: string }, TPayload, TFo
     title,
     description,
     icon,
+    actions,
     searchPlaceholder = "Cari...",
     statusFilterOptions,
     defaultStatus = "all",
@@ -438,6 +440,7 @@ export function createMasterDataPage<TData extends { id: string }, TPayload, TFo
                 </>
               }
               onPrimaryAction={handleAdd}
+              actions={actions}
             >
               {tableSection}
             </DataTablePageShell>

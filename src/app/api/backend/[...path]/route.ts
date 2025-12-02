@@ -48,14 +48,17 @@ async function proxyRequest(req: NextRequest) {
     )
   }
 
+  const overrideBaseUrl = req.headers.get("x-backend-base-url")
+  const BASE_URL = overrideBaseUrl ?? BACKEND_BASE_URL
+
   const search = req.nextUrl.search || ""
-  const normalizedBase = BACKEND_BASE_URL.replace(/\/+$/, "")
+  const normalizedBase = BASE_URL.replace(/\/+$/, "")
   const forwardedPath = req.nextUrl.pathname.replace(/^\/api\/backend/, "")
   const targetUrl = `${normalizedBase}${forwardedPath}${search}`
 
   const headers = new Headers(req.headers)
   headers.set("Authorization", `Bearer ${accessToken}`)
-  headers.set("Host", new URL(BACKEND_BASE_URL).host)
+  headers.set("Host", new URL(BASE_URL).host)
 
   const body =
     ["GET", "HEAD"].includes(req.method) ? undefined : await req.blob()

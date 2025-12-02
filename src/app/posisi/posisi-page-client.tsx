@@ -1,7 +1,8 @@
 "use client"
 
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import type { ColumnDef } from "@tanstack/react-table"
-import { Briefcase, CheckCircle2, MoreHorizontal, PencilLine, Trash2 } from "lucide-react"
+import { Briefcase, CheckCircle2, MoreHorizontal, PencilLine, RefreshCw, Trash2 } from "lucide-react"
 
 import { createMasterDataPage } from "@/features/master-data/master-data-page"
 import { PositionFormDialog, type PositionFormState } from "@/app/posisi/_components/position-form-dialog"
@@ -18,11 +19,13 @@ import { Switch } from "@/components/ui/switch"
 import {
   createPosition,
   deletePosition,
+  getPositionsMaster,
   listPositions,
   type Position,
   type PositionPayload,
   updatePosition,
 } from "@/lib/api"
+import { showToast } from "@/lib/show-toast"
 
 const STATUS_OPTIONS = [
   { label: "Semua", value: "all" },
@@ -36,6 +39,7 @@ const PositionPage = createMasterDataPage<Position, PositionPayload, PositionFor
   title: "Data Posisi",
   description: "Daftar posisi dan peran yang tersedia untuk karyawan.",
   icon: <Briefcase className="h-4 w-4 text-primary" />,
+  actions: <PositionSyncButton queryKey="positions" />,
   searchPlaceholder: "Cari nama atau sys code...",
   statusFilterOptions: STATUS_OPTIONS,
   getRowId: (row) => row.id,
@@ -65,6 +69,46 @@ const PositionPage = createMasterDataPage<Position, PositionPayload, PositionFor
   }),
   FormComponent: PositionFormDialog,
 })
+
+function PositionSyncButton({ queryKey }: { queryKey: string }) {
+  const queryClient = useQueryClient()
+  const { mutate, isPending } = useMutation({
+    mutationFn: async () => {
+      const masterResponse = await getPositionsMaster()
+      const masterPositions = masterResponse.data ?? []
+
+      await Promise.all(
+        masterPositions.map((pos) =>
+          createPosition({
+            nama_posisi: pos.nama_posisi,
+            alias_posisi: pos.alias_posisi,
+            sys_code: pos.sys_code,
+            is_active: pos.is_active,
+          }),
+        ),
+      )
+    },
+    onSuccess: () => {
+      showToast("success", "Sinkronisasi posisi selesai.")
+      queryClient.invalidateQueries({ queryKey: [queryKey] })
+    },
+    onError: (error: Error) => showToast("error", error.message),
+  })
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-8 gap-1.5 font-normal"
+      onClick={() => mutate()}
+      disabled={isPending}
+      aria-busy={isPending}
+    >
+      <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+      {isPending ? "Sinkronisasi..." : "Sync"}
+    </Button>
+  )
+}
 
 function buildColumns(
   onEdit: (item: Position) => void,

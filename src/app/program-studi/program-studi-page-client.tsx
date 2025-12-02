@@ -1,7 +1,8 @@
 "use client"
 
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import type { ColumnDef } from "@tanstack/react-table"
-import { GraduationCap, MoreHorizontal, PencilLine, Trash2 } from "lucide-react"
+import { GraduationCap, MoreHorizontal, PencilLine, RefreshCw, Trash2 } from "lucide-react"
 
 import { createMasterDataPage } from "@/features/master-data/master-data-page"
 import {
@@ -20,11 +21,13 @@ import { Badge } from "@/components/ui/badge"
 import {
   createStudyProgram,
   deleteStudyProgram,
+  getStudyProgramsMaster,
   listStudyPrograms,
   type StudyProgram,
   type StudyProgramPayload,
   updateStudyProgram,
 } from "@/lib/api"
+import { showToast } from "@/lib/show-toast"
 
 const STATUS_OPTIONS = [
   { label: "Semua", value: "all" },
@@ -38,6 +41,7 @@ const StudyProgramPage = createMasterDataPage<StudyProgram, StudyProgramPayload,
   title: "Data Program Studi",
   description: "Kelola daftar program studi, jenjang pendidikan, dan jurusan terkait.",
   icon: <GraduationCap className="h-4 w-4 text-primary" />,
+  actions: <StudyProgramSyncButton queryKey="study-programs" />,
   searchPlaceholder: "Cari nama, kode, atau jurusan...",
   statusFilterOptions: STATUS_OPTIONS,
   getRowId: (row) => row.id,
@@ -66,6 +70,49 @@ const StudyProgramPage = createMasterDataPage<StudyProgram, StudyProgramPayload,
   }),
   FormComponent: StudyProgramFormDialog,
 })
+
+function StudyProgramSyncButton({ queryKey }: { queryKey: string }) {
+  const queryClient = useQueryClient()
+  const { mutate, isPending } = useMutation({
+    mutationFn: async () => {
+      const masterResponse = await getStudyProgramsMaster()
+      const masterPrograms = masterResponse.data ?? []
+
+      await Promise.all(
+        masterPrograms.map((program) =>
+          createStudyProgram({
+            kode_prodi: program.kode_prodi,
+            nama_prodi: program.nama_prodi,
+            alias_prodi: program.alias_prodi,
+            jenjang_pendidikan: program.jenjang_pendidikan,
+            nama_jurusan: program.nama_jurusan,
+            alias_jurusan: program.alias_jurusan ?? "",
+            status_prodi: program.status_prodi ?? "active",
+          }),
+        ),
+      )
+    },
+    onSuccess: () => {
+      showToast("success", "Sinkronisasi program studi selesai.")
+      queryClient.invalidateQueries({ queryKey: [queryKey] })
+    },
+    onError: (error: Error) => showToast("error", error.message),
+  })
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-8 gap-1.5 font-normal"
+      onClick={() => mutate()}
+      disabled={isPending}
+      aria-busy={isPending}
+    >
+      <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+      {isPending ? "Sinkronisasi..." : "Sync"}
+    </Button>
+  )
+}
 
 function buildColumns(onEdit: (item: StudyProgram) => void, onDelete: (item: StudyProgram) => void) {
   const columns: ColumnDef<StudyProgram>[] = [

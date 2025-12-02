@@ -24,6 +24,7 @@ import {
   PencilLine,
   Plus,
   QrCode,
+  RefreshCw,
   Settings2,
   Text,
   Trash2,
@@ -81,6 +82,7 @@ import {
   DepartmentPayload,
   listDepartments,
   updateDepartment,
+  getDepartementsMaster,
 } from "@/lib/api"
 import type { ExtendedColumnFilter, ExtendedColumnSort } from "@/types/data-table"
 
@@ -286,8 +288,33 @@ export default function DepartmentsPageClient() {
     onSettled: () => setTogglingId(null),
   })
 
+  const syncMutation = useMutation({
+    mutationFn: async () => {
+      const masterResponse = await getDepartementsMaster()
+      const masterDepartments = masterResponse.data ?? []
+
+      await Promise.all(
+        masterDepartments.map((dept) =>
+          createDepartment({
+            name: dept.name,
+            alias: dept.alias,
+            sys_code: dept.sys_code,
+            is_active: dept.is_active,
+            major_id: dept.major_id ?? null,
+          })
+        )
+      )
+    },
+    onSuccess: () => {
+      showToast("success", "Sinkronisasi departemen selesai.")
+      queryClient.invalidateQueries({ queryKey: ["departments"] })
+    },
+    onError: (error: Error) => showToast("error", error.message),
+  })
+
   const { mutate: removeRow } = removeMutation
   const { mutate: toggleRowStatus } = toggleStatusMutation
+  const { mutate: syncDepartments, isPending: isSyncing } = syncMutation
 
   const requestSingleDelete = useCallback(
     (dept: Department) => {
@@ -754,6 +781,19 @@ export default function DepartmentsPageClient() {
               </>
             }
             onPrimaryAction={handleAdd}
+            actions={
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 font-normal"
+                onClick={() => syncDepartments()}
+                disabled={isSyncing}
+                aria-busy={isSyncing}
+              >
+                <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+                {isSyncing ? "Sinkronisasi..." : "Sync"}
+              </Button>
+            }
           >
             {tableSection}
           </DataTablePageShell>
