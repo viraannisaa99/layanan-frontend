@@ -1,14 +1,15 @@
 "use client"
 
 import type { ColumnDef } from "@tanstack/react-table"
-import { useQuery } from "@tanstack/react-query"
+import { useMemo } from "react"
 import { GraduationCap, MoreHorizontal, PencilLine, Trash2 } from "lucide-react"
 
-import { createMasterDataPage } from "@/features/master-data/master-data-page"
 import {
   ServiceFormDialog,
   type ServiceFormState,
 } from "@/app/layanan/_components/layanan-form-dialog"
+import { useDepartmentOptions } from "@/features/master-data/hooks/useDepartmentOptions"
+import { createMasterDataPage } from "@/features/master-data/master-data-page"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,14 +22,11 @@ import { Badge } from "@/components/ui/badge"
 import {
   createService,
   deleteService,
-  listDepartments,
   listServices,
-  type Department,
   type Service,
   type ServicePayload,
   updateService,
 } from "@/lib/api"
-import { useEffect } from "react"
 
 const STATUS_OPTIONS = [
   { label: "Semua", value: "all" },
@@ -36,41 +34,35 @@ const STATUS_OPTIONS = [
   { label: "Nonaktif", value: "inactive" },
 ]
 
-const ServicePage = createMasterDataPage<Service, ServicePayload, ServiceFormState>({
-  entity: "Service",
-  queryKey: "service",
-  title: "Data Service",
-  description: "Kelola daftar layanan yang tersedia.",
-  icon: <GraduationCap className="h-4 w-4 text-primary" />,
-  searchPlaceholder: "Cari nama atau kode...",
-  statusFilterOptions: STATUS_OPTIONS,
-  getRowId: (row) => row.id,
-  columns: ({ onEdit, onDelete }) => buildColumns(onEdit, onDelete),
-  list: listServices,
-  create: createService,
-  update: updateService,
-  remove: deleteService,
-  defaultFormState: {
-    sys_code: "",
-    name: "",
-    department_id: "",
-    requester_scope: "",
-    description: "",
-    is_active: true,
+const DEFAULT_FORM_STATE: ServiceFormState = {
+  sys_code: "",
+  name: "",
+  department_id: "",
+  requester_scope: "",
+  description: "",
+  is_active: true,
+}
+
+type LookupMaps = { departments: Record<string, string> }
+
+const compactId = (value: string) => (value.length > 8 ? `${value.slice(0, 8)}...` : value)
+
+function useServiceLookups() {
+  const { options, lookupMap, loading } = useDepartmentOptions({ status: "active" })
+  return {
+    departmentOptions: options,
+    lookupMaps: { departments: lookupMap },
+    loadingDepartments: loading,
+  }
+}
+
+function buildColumns(
+  handlers: {
+    onEdit: (item: Service) => void
+    onDelete: (item: Service) => void
   },
-  mapEntityToFormState: (service) => ({
-    sys_code: service.sys_code,
-    name: service.name,
-    department_id: service.department_id,
-    requester_scope: service.requester_scope,
-    description: service.description,
-    is_active: service.is_active,
-  }),
-  FormComponent: ServiceFormDialog,
-
-})
-
-function buildColumns(onEdit: (item: Service) => void, onDelete: (item: Service) => void) {
+  lookups: LookupMaps,
+) {
   const columns: ColumnDef<Service>[] = [
     {
       id: "sys_code",
@@ -89,7 +81,10 @@ function buildColumns(onEdit: (item: Service) => void, onDelete: (item: Service)
       accessorKey: "department_id",
       header: ({ column }) => <DataTableColumnHeader column={column} label="Departemen" />,
       cell: ({ row }) => (
-        <DepartmentName departmentId={row.original.department_id} />
+        <span className="text-xs">
+          {lookups.departments[row.original.department_id] ??
+            compactId(row.original.department_id)}
+        </span>
       ),
     },
     {
@@ -129,14 +124,14 @@ function buildColumns(onEdit: (item: Service) => void, onDelete: (item: Service)
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-36 rounded-sm">
-              <DropdownMenuItem onSelect={() => onEdit(row.original)} className="text-xs">
+              <DropdownMenuItem onSelect={() => handlers.onEdit(row.original)} className="text-xs">
                 <PencilLine className="mr-2 h-3.5 w-3.5" />
                 Edit
               </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={(event) => {
                   event.preventDefault()
-                  onDelete(row.original)
+                  handlers.onDelete(row.original)
                 }}
                 className="text-xs text-destructive focus:text-destructive"
               >
@@ -154,27 +149,48 @@ function buildColumns(onEdit: (item: Service) => void, onDelete: (item: Service)
       maxSize: 20,
     },
   ]
+
   return columns
 }
 
-export default ServicePage
+export default function ServicePageClient() {
+  const { departmentOptions, lookupMaps, loadingDepartments } = useServiceLookups()
 
-function DepartmentName({ departmentId }: { departmentId: string }) {
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["departments", "options"],
-    queryFn: () => listDepartments({ status: "active", perPage: 200 }),
-    staleTime: 5 * 60 * 1000,
-  })
-
-  if (isLoading) return <span className="text-xs text-muted-foreground">Memuat...</span>
-  if (isError) return <span className="text-xs text-muted-foreground">-</span>
-
-  const departments: Department[] = data?.data ?? []
-  const dept = departments.find((item) => item.id === departmentId)
-
-  return (
-    <span className="text-xs">
-      {dept ? `${dept.name} (${dept.alias})` : departmentId}
-    </span>
+  const ServicePage = useMemo(
+    () =>
+      createMasterDataPage<Service, ServicePayload, ServiceFormState>({
+        entity: "Service",
+        queryKey: "service",
+        title: "Data Service",
+        description: "Kelola daftar layanan yang tersedia.",
+        icon: <GraduationCap className="h-4 w-4 text-primary" />,
+        searchPlaceholder: "Cari nama atau kode...",
+        statusFilterOptions: STATUS_OPTIONS,
+        getRowId: (row) => row.id,
+        columns: ({ onEdit, onDelete }) => buildColumns({ onEdit, onDelete }, lookupMaps),
+        list: listServices,
+        create: createService,
+        update: updateService,
+        remove: deleteService,
+        defaultFormState: DEFAULT_FORM_STATE,
+        mapEntityToFormState: (service) => ({
+          sys_code: service.sys_code,
+          name: service.name,
+          department_id: service.department_id,
+          requester_scope: service.requester_scope,
+          description: service.description,
+          is_active: service.is_active,
+        }),
+        FormComponent: (props) => (
+          <ServiceFormDialog
+            {...props}
+            departmentOptions={departmentOptions}
+            loadingDepartments={loadingDepartments}
+          />
+        ),
+      }),
+    [lookupMaps, departmentOptions, loadingDepartments],
   )
+
+  return <ServicePage />
 }

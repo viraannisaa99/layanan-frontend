@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, type Dispatch, type ReactNode, type SetStateAction } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useEffect, type ReactNode } from "react"
 import { Save } from "lucide-react"
 
+import type { MasterDataFormProps } from "@/features/master-data/master-data-page"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -13,14 +14,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
-import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-import type { Department, Service, ServicePayload } from "@/lib/api"
-import { listDepartments } from "@/lib/api"
-import type { MasterDataFormProps } from "@/features/master-data/master-data-page"
+import type { Service, ServicePayload } from "@/lib/api"
 
 export type ServiceFormState = {
   sys_code: string
@@ -31,40 +29,40 @@ export type ServiceFormState = {
   is_active: boolean
 }
 
-type Props = MasterDataFormProps<Service, ServiceFormState, ServicePayload>
+type SelectOption = { value: string; label: string }
+
+type Props = MasterDataFormProps<Service, ServiceFormState, ServicePayload> & {
+  departmentOptions: SelectOption[]
+  loadingDepartments?: boolean
+}
 
 export function ServiceFormDialog({
   open,
   editing,
   formState,
   disabled,
+  departmentOptions,
+  loadingDepartments = false,
   onOpenChange,
   onFormStateChange,
   onSubmit,
 }: Props) {
   const handleChange =
     (field: keyof ServiceFormState) =>
-      (value: string) => {
-        onFormStateChange((prev) => ({ ...prev, [field]: value }))
-      }
-
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["departments", "options"],
-    queryFn: () => listDepartments({ status: "active", perPage: 200 }),
-  });
-
-  const departments: Department[] = data?.data ?? []
+    (value: string) => {
+      onFormStateChange((prev) => ({ ...prev, [field]: value }))
+    }
 
   useEffect(() => {
-    if (editing || formState.department_id || !departments.length) return;
-    onFormStateChange(prev =>
-      prev.department_id ? prev : { ...prev, department_id: departments[0].id }
-    );
-  }, [editing, departments, formState.department_id, onFormStateChange]);
+    if (editing || formState.department_id || !departmentOptions.length) return
+    onFormStateChange((prev) =>
+      prev.department_id ? prev : { ...prev, department_id: departmentOptions[0].value },
+    )
+  }, [editing, departmentOptions, formState.department_id, onFormStateChange])
 
   const selectedDeptMissing =
     Boolean(formState.department_id) &&
-    !departments.some((dept) => dept.id === formState.department_id)
+    !departmentOptions.some((dept) => dept.value === formState.department_id)
 
   type RequesterScope = "All" | "Mahasiswa" | "Pegawai"
 
@@ -116,16 +114,14 @@ export function ServiceFormDialog({
               <Select
                 value={formState.department_id}
                 onValueChange={(value) => handleChange("department_id")(value)}
-                disabled={isLoading || isError}
+                disabled={loadingDepartments || !departmentOptions.length}
               >
-                <SelectTrigger className="h-8" aria-busy={isLoading}>
-                  <SelectValue
-                    placeholder={isLoading ? "Memuat..." : isError ? "Gagal memuat" : "Pilih departemen"}
-                  />
+                <SelectTrigger className="h-8" aria-busy={loadingDepartments}>
+                  <SelectValue placeholder={loadingDepartments ? "Memuat..." : "Pilih departemen"} />
                 </SelectTrigger>
                 <SelectContent>
                   <DepartmentSelectOptions
-                    departments={departments}
+                    departments={departmentOptions}
                     formState={formState}
                     selectedDeptMissing={selectedDeptMissing}
                   />
@@ -137,9 +133,6 @@ export function ServiceFormDialog({
                 required
                 aria-hidden="true"
               />
-              {isError ? (
-                <p className="text-[11px] text-destructive">Tidak dapat memuat list.</p>
-              ) : null}
             </Field>
             <Field label="Requester Scope">
               <Select value={formState.requester_scope} onValueChange={(requester_scope: RequesterScope) => handleChange("requester_scope")(requester_scope)} required>
@@ -204,15 +197,15 @@ function DepartmentSelectOptions({
   formState,
   selectedDeptMissing,
 }: {
-  departments: Department[]
+  departments: SelectOption[]
   formState: ServiceFormState
   selectedDeptMissing: boolean
 }) {
   return (
     <>
       {departments.map((dept) => (
-        <SelectItem key={dept.id} value={dept.id}>
-          {dept.name} ({dept.alias})
+        <SelectItem key={dept.value} value={dept.value}>
+          {dept.label}
         </SelectItem>
       ))}
 
@@ -224,5 +217,3 @@ function DepartmentSelectOptions({
     </>
   )
 }
-
-

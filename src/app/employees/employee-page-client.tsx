@@ -1,11 +1,9 @@
 "use client"
 
 import { useMemo } from "react"
-import { useQuery } from "@tanstack/react-query"
 import type { ColumnDef } from "@tanstack/react-table"
 import { Badge, MoreHorizontal, PencilLine, Trash2, Users } from "lucide-react"
 
-import { createMasterDataPage } from "@/features/master-data/master-data-page"
 import { EmployeeFormDialog, type EmployeeFormState } from "@/app/employees/_components/employee-form-dialog"
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
 import { Button } from "@/components/ui/button"
@@ -15,27 +13,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { createMasterDataPage } from "@/features/master-data/master-data-page"
+import { useMasterDataLookups } from "@/features/master-data/hooks/useMasterDataLookups"
 import {
   createEmployee,
   deleteEmployee,
-  listDepartments,
   listEmployees,
-  listPositions,
-  listStudyPrograms,
   type Employee,
   type EmployeePayload,
   updateEmployee,
 } from "@/lib/api"
 
-type LookupOption = { value: string; label: string }
-type LookupMaps = {
-  programs: Record<string, string>
-  departments: Record<string, string>
-  positions: Record<string, string>
-}
-
-const compactId = (value: string) =>
-  value.length > 8 ? `${value.slice(0, 8)}…` : value
+const compactId = (value: string) => (value.length > 8 ? `${value.slice(0, 8)}...` : value)
 
 const DEFAULT_FORM_STATE: EmployeeFormState = {
   nip: "",
@@ -48,74 +37,16 @@ const DEFAULT_FORM_STATE: EmployeeFormState = {
   position_id: "",
 }
 
-function useEmployeeLookups() {
-  const programQuery = useQuery({
-    queryKey: ["study-program-options"],
-    queryFn: () => listStudyPrograms({ status: "all", perPage: 200 }),
-    select: (response) => response.data ?? [],
-  })
-
-  const departmentQuery = useQuery({
-    queryKey: ["department-options"],
-    queryFn: () => listDepartments({ status: "all", perPage: 200 }),
-    select: (response) => response.data ?? [],
-  })
-
-  const positionQuery = useQuery({
-    queryKey: ["position-options"],
-    queryFn: () => listPositions({ status: "all", perPage: 200 }),
-    select: (response) => response.data ?? [],
-  })
-
-  const programOptions: LookupOption[] =
-    programQuery.data?.map((item) => ({
-      value: item.id,
-      label: `${item.nama_prodi} (${item.kode_prodi})`,
-    })) ?? []
-
-  const departmentOptions: LookupOption[] =
-    departmentQuery.data?.map((item) => ({
-      value: item.id,
-      label: `${item.name} (${item.alias})`,
-    })) ?? []
-
-  const positionOptions: LookupOption[] =
-    positionQuery.data?.map((item) => ({
-      value: item.id,
-      label: `${item.nama_posisi} (${item.alias_posisi})`,
-    })) ?? []
-
-  const lookupMaps: LookupMaps = {
-    programs: programOptions.reduce<Record<string, string>>((acc, curr) => {
-      acc[curr.value] = curr.label
-      return acc
-    }, {}),
-    departments: departmentOptions.reduce<Record<string, string>>((acc, curr) => {
-      acc[curr.value] = curr.label
-      return acc
-    }, {}),
-    positions: positionOptions.reduce<Record<string, string>>((acc, curr) => {
-      acc[curr.value] = curr.label
-      return acc
-    }, {}),
-  }
-
-  const loadingOptions = programQuery.isLoading || departmentQuery.isLoading || positionQuery.isLoading
-  return {
-    programOptions,
-    departmentOptions,
-    positionOptions,
-    lookupMaps,
-    loadingOptions,
-  }
-}
-
 function buildColumns(
   handlers: {
     onEdit: (item: Employee) => void
     onDelete: (item: Employee) => void
   },
-  lookups: LookupMaps,
+  lookups: {
+    programs: Record<string, string>
+    departments: Record<string, string>
+    positions: Record<string, string>
+  },
 ): ColumnDef<Employee>[] {
   const columns: ColumnDef<Employee>[] = [
     {
@@ -223,8 +154,8 @@ export default function EmployeePageClient() {
     departmentOptions,
     positionOptions,
     lookupMaps,
-    loadingOptions,
-  } = useEmployeeLookups()
+    loading,
+  } = useMasterDataLookups()
 
   const EmployeePage = useMemo(
     () =>
@@ -259,11 +190,11 @@ export default function EmployeePageClient() {
             programOptions={programOptions}
             departmentOptions={departmentOptions}
             positionOptions={positionOptions}
-            loadingOptions={loadingOptions}
+            loadingOptions={loading}
           />
         ),
       }),
-    [lookupMaps, programOptions, departmentOptions, positionOptions, loadingOptions],
+    [lookupMaps, programOptions, departmentOptions, positionOptions, loading],
   )
 
   return <EmployeePage />
