@@ -191,6 +191,32 @@ export type EmploymentBondPayload = {
   sys_code: string
 }
 
+export type Employee = {
+  id: string
+  nip: string
+  inisial: string
+  nama_display: string
+  title_prefix?: string | null
+  title_suffix?: string | null
+  program_studi_id: string
+  department_id: string
+  position_id: string
+  created_at: string
+  updated_at: string
+  deleted_at?: string | null
+}
+
+export type EmployeePayload = {
+  nip: string
+  inisial: string
+  nama_display: string
+  title_prefix?: string | null
+  title_suffix?: string | null
+  program_studi_id: string
+  department_id: string
+  position_id: string
+}
+
 type FetchOptions<T> = {
   init?: RequestInit
   fallback?: T
@@ -292,35 +318,13 @@ function buildListSearchParams(params: PaginatedListParams) {
   return search
 }
 
-export function listServices(params: PaginatedListParams = {}) {
-  const search = buildListSearchParams(params)
-  return apiRequest<Service[]>(`/api/v1/services?${search.toString()}`)
+type EmployeeListParams = PaginatedListParams & {
+  program_studi_id?: string
+  department_id?: string
+  position_id?: string
 }
 
-export function createService(payload: ServicePayload) {
-  return apiFetch<Service>(`/api/v1/services`, {
-    init: {
-      method: "POST",
-      body: JSON.stringify(payload),
-    },
-  })
-}
-
-export function updateService(id: string, payload: ServicePayload) {
-  return apiFetch<Service>(`/api/v1/service/${id}`, {
-    init: {
-      method: "PUT",
-      body: JSON.stringify(payload),
-    },
-  })
-}
-
-export function deleteService(id: string) {
-  return apiFetch<null>(`/api/v1/service/${id}`, {
-    init: { method: "DELETE" },
-    fallback: null,
-  })
-}
+// Department
 
 export function getDepartementsMaster(params: DepartmentListParams = {}) {
   const search = new URLSearchParams()
@@ -393,6 +397,19 @@ export function deleteDepartment(id: string) {
   })
 }
 
+// Study Programs
+
+export function getStudyProgramsMaster(params: PaginatedListParams = {}) {
+  const search = buildListSearchParams(params)
+  return apiRequest<StudyProgram[]>(`/api/v1/study-programs?${search.toString()}`, {
+    init: {
+      headers: {
+        "X-Backend-Base-Url": "https://api.devpcr.duckdns.org/"
+      }
+    }
+  })
+}
+
 export function listStudyPrograms(params: PaginatedListParams = {}) {
   const search = new URLSearchParams()
   search.set("status", params.status ?? "all")
@@ -409,17 +426,6 @@ export function listStudyPrograms(params: PaginatedListParams = {}) {
   return apiRequest<StudyProgram[]>(
     `/api/v1/study-programs?${search.toString()}`
   )
-}
-
-export function getStudyProgramsMaster(params: PaginatedListParams = {}) {
-  const search = buildListSearchParams(params)
-  return apiRequest<StudyProgram[]>(`/api/v1/study-programs?${search.toString()}`, {
-    init: {
-      headers: {
-        "X-Backend-Base-Url": "https://api.devpcr.duckdns.org/"
-      }
-    }
-  })
 }
 
 export function createStudyProgram(payload: StudyProgramPayload) {
@@ -447,6 +453,20 @@ export function deleteStudyProgram(id: string) {
   })
 }
 
+// Positions
+
+export function getPositionsMaster(params: PaginatedListParams = {}) {
+  const search = new URLSearchParams()
+  search.set("status", params.status ?? "all")
+  return apiRequest<Position[]>(`/api/v1/positions?${search.toString()}`, {
+    init: {
+      headers: {
+        "X-Backend-Base-Url": "https://api.devpcr.duckdns.org/"
+      }
+    }
+  })
+}
+
 export function listPositions(params: PaginatedListParams = {}) {
   const search = buildListSearchParams(params)
   search.set("status", params.status ?? "all")
@@ -459,26 +479,7 @@ export function listPositions(params: PaginatedListParams = {}) {
   if (params.search) {
     search.set("search", params.search)
   }
-  // return apiRequest<Position[]>(`/api/v1/positions?${search.toString()}`, {
-  //   init: {
-  //     headers: {
-  //       "X-Backend-Base-Url": "https://api.devpcr.duckdns.org/"
-  //     }
-  //   }
-  // })
   return apiRequest<Position[]>(`/api/v1/positions?${search.toString()}`)
-}
-
-export function getPositionsMaster(params: PaginatedListParams = {}) {
-  const search = new URLSearchParams()
-  search.set("status", params.status ?? "all")
-  return apiRequest<Position[]>(`/api/v1/positions?${search.toString()}`, {
-    init: {
-      headers: {
-        "X-Backend-Base-Url": "https://api.devpcr.duckdns.org/"
-      }
-    }
-  })
 }
 
 export function createPosition(payload: PositionPayload) {
@@ -506,19 +507,33 @@ export function deletePosition(id: string) {
   })
 }
 
-export function listEmployeeClasses(params: PaginatedListParams = {}) {
-  const search = buildListSearchParams(params)
-  return apiRequest<EmployeeClass[]>(`/api/v1/employee-classes?${search.toString()}`, {
-    init: {
-      headers: {
-        "X-Backend-Base-Url": "https://api.devpcr.duckdns.org/"
-      }
-    }
-  })
+// Employees
+
+export function listEmployees(params: EmployeeListParams = {}) {
+  const search = new URLSearchParams()
+  if (params.page) {
+    search.set("page", params.page.toString())
+  }
+  if (params.perPage) {
+    search.set("per_page", params.perPage.toString())
+  }
+  if (params.search) {
+    search.set("search", params.search)
+  }
+  if (params.program_studi_id) {
+    search.set("program_studi_id", params.program_studi_id)
+  }
+  if (params.department_id) {
+    search.set("department_id", params.department_id)
+  }
+  if (params.position_id) {
+    search.set("position_id", params.position_id)
+  }
+  return apiRequest<Employee[]>(`/api/v1/employees?${search.toString()}`)
 }
 
-export function createEmployeeClass(payload: EmployeeClassPayload) {
-  return apiFetch<EmployeeClass>(`/api/v1/employee-classes`, {
+export function createEmployee(payload: EmployeePayload) {
+  return apiFetch<Employee>(`/api/v1/employees`, {
     init: {
       method: "POST",
       body: JSON.stringify(payload),
@@ -526,8 +541,8 @@ export function createEmployeeClass(payload: EmployeeClassPayload) {
   })
 }
 
-export function updateEmployeeClass(id: string, payload: EmployeeClassPayload) {
-  return apiFetch<EmployeeClass>(`/api/v1/employee-classes/${id}`, {
+export function updateEmployee(id: string, payload: EmployeePayload) {
+  return apiFetch<Employee>(`/api/v1/employees/${id}`, {
     init: {
       method: "PUT",
       body: JSON.stringify(payload),
@@ -535,26 +550,22 @@ export function updateEmployeeClass(id: string, payload: EmployeeClassPayload) {
   })
 }
 
-export function deleteEmployeeClass(id: string) {
-  return apiFetch<null>(`/api/v1/employee-classes/${id}`, {
+export function deleteEmployee(id: string) {
+  return apiFetch<null>(`/api/v1/employees/${id}`, {
     init: { method: "DELETE" },
     fallback: null,
   })
 }
 
-export function listActivities(params: PaginatedListParams = {}) {
+// Services
+
+export function listServices(params: PaginatedListParams = {}) {
   const search = buildListSearchParams(params)
-  return apiRequest<Activity[]>(`/api/v1/activities?${search.toString()}`, {
-    init: {
-      headers: {
-        "X-Backend-Base-Url": "https://api.devpcr.duckdns.org/"
-      }
-    }
-  })
+  return apiRequest<Service[]>(`/api/v1/services?${search.toString()}`)
 }
 
-export function createActivity(payload: ActivityPayload) {
-  return apiFetch<Activity>(`/api/v1/activities`, {
+export function createService(payload: ServicePayload) {
+  return apiFetch<Service>(`/api/v1/services`, {
     init: {
       method: "POST",
       body: JSON.stringify(payload),
@@ -562,8 +573,8 @@ export function createActivity(payload: ActivityPayload) {
   })
 }
 
-export function updateActivity(id: string, payload: ActivityPayload) {
-  return apiFetch<Activity>(`/api/v1/activities/${id}`, {
+export function updateService(id: string, payload: ServicePayload) {
+  return apiFetch<Service>(`/api/v1/service/${id}`, {
     init: {
       method: "PUT",
       body: JSON.stringify(payload),
@@ -571,68 +582,8 @@ export function updateActivity(id: string, payload: ActivityPayload) {
   })
 }
 
-export function deleteActivity(id: string) {
-  return apiFetch<null>(`/api/v1/activities/${id}`, {
-    init: { method: "DELETE" },
-    fallback: null,
-  })
-}
-
-export function listLeaveQuotas(params: PaginatedListParams = {}) {
-  const search = buildListSearchParams(params)
-  return apiRequest<LeaveQuota[]>(`/api/v1/leave-quotas?${search.toString()}`)
-}
-
-export function createLeaveQuota(payload: LeaveQuotaPayload) {
-  return apiFetch<LeaveQuota>(`/api/v1/leave-quotas`, {
-    init: {
-      method: "POST",
-      body: JSON.stringify(payload),
-    },
-  })
-}
-
-export function updateLeaveQuota(id: string, payload: LeaveQuotaPayload) {
-  return apiFetch<LeaveQuota>(`/api/v1/leave-quotas/${id}`, {
-    init: {
-      method: "PUT",
-      body: JSON.stringify(payload),
-    },
-  })
-}
-
-export function deleteLeaveQuota(id: string) {
-  return apiFetch<null>(`/api/v1/leave-quotas/${id}`, {
-    init: { method: "DELETE" },
-    fallback: null,
-  })
-}
-
-export function listEmploymentBonds(params: PaginatedListParams = {}) {
-  const search = buildListSearchParams(params)
-  return apiRequest<EmploymentBond[]>(`/api/v1/employment-bonds?${search.toString()}`)
-}
-
-export function createEmploymentBond(payload: EmploymentBondPayload) {
-  return apiFetch<EmploymentBond>(`/api/v1/employment-bonds`, {
-    init: {
-      method: "POST",
-      body: JSON.stringify(payload),
-    },
-  })
-}
-
-export function updateEmploymentBond(id: string, payload: EmploymentBondPayload) {
-  return apiFetch<EmploymentBond>(`/api/v1/employment-bonds/${id}`, {
-    init: {
-      method: "PUT",
-      body: JSON.stringify(payload),
-    },
-  })
-}
-
-export function deleteEmploymentBond(id: string) {
-  return apiFetch<null>(`/api/v1/employment-bonds/${id}`, {
+export function deleteService(id: string) {
+  return apiFetch<null>(`/api/v1/service/${id}`, {
     init: { method: "DELETE" },
     fallback: null,
   })

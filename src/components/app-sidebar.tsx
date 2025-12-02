@@ -41,19 +41,17 @@ const NAVIGATION = [
     url: "/layanan",
     icon: ClipboardCheck,
     items: [
-      {title: "Layanan", url:"/layanan"},
-      {title: "Permohonan", url: "/permohonan"},
-      {title: "Pengaduan", url: "/pengaduan"},
+      { title: "Layanan", url: "/layanan" },
+      { title: "Permohonan", url: "/permohonan" },
+      { title: "Pengaduan", url: "/pengaduan" },
     ]
   },
   {
-    title: "Karyawan",
+    title: "Civitas PCR",
     url: "/employees",
     icon: Users,
     items: [
-      { title: "Data Karyawan", url: "/employees" },
-      { title: "Onboarding", url: "/employees/onboarding" },
-      { title: "Kontrak", url: "/employees/contracts" },
+      { title: "Pegawai", url: "/employees" },
     ],
   },
   {
@@ -82,11 +80,6 @@ const NAVIGATION = [
       { title: "Departemen", url: "/departments" },
       { title: "Program Studi", url: "/program-studi" },
       { title: "Posisi", url: "/posisi" },
-      { title: "Kelas Pegawai", url: "/kelas-pegawai" },
-      { title: "Aktivitas", url: "/aktivitas" },
-      { title: "Jumlah Cuti", url: "/jumlah-cuti" },
-      { title: "Ikatan Kerja", url: "/ikatan-kerja" },
-      { title: "Struktur Organisasi", url: "/org-structure" },
     ],
   },
   {
